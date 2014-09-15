@@ -2193,8 +2193,8 @@ bool CBlock::AcceptBlock()
     CBlockIndex* pindexPrev = (*mi).second;
     int nHeight = pindexPrev->nHeight+1;
 
-   // if (IsProofOfWork() && nHeight > CUTOFF_POW_BLOCK)
-     //   return DoS(100, error("AcceptBlock() : No proof-of-work allowed anymore (height = %d)", nHeight));
+    if (IsProofOfWork() && nHeight > CUTOFF_POW_BLOCK)
+        return DoS(100, error("AcceptBlock() : No proof-of-work allowed anymore (height = %d)", nHeight));
 //	if (IsProofOfStake() && nHeight < START_POS_BLOCK)
   //  return DoS(100, error("AcceptBlock() : No proof of stake allowed yet (height = %d)", nHeight));
     // Check proof-of-work or proof-of-stake
@@ -2970,7 +2970,13 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         CAddress addrFrom;
         uint64 nNonce = 1;
         vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
+        
+        bool badVersion = false;
+        if (pfrom->nVersion < 60504 && nBestHeight >= CUTOFF_POW_BLOCK)
+            badVersion = true;
         if (pfrom->nVersion < MIN_PROTO_VERSION)
+            badVersion = true;
+        if (badVersion)
         {
             // Since February 20, 2012, the protocol is initiated at version 209,
             // and earlier versions are no longer supported

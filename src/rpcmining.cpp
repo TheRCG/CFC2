@@ -77,7 +77,7 @@ Value getmininginfo(const Array& params, bool fHelp)
     obj.push_back(Pair("generate",      GetBoolArg("-gen")));
     obj.push_back(Pair("genproclimit",  (int)GetArg("-genproclimit", -1)));
     obj.push_back(Pair("hashespersec",  gethashespersec(params, false)));
-	obj.push_back(Pair("networkhashps", getnetworkhashps(params, false)));
+    obj.push_back(Pair("networkhashps", getnetworkhashps(params, false)));
     obj.push_back(Pair("pooledtx",      (uint64_t)mempool.size()));
     obj.push_back(Pair("testnet",       fTestNet));
     return obj;
@@ -113,6 +113,9 @@ Value getnetworkhashps(const Array& params, bool fHelp)
             "getnetworkhashps [blocks]\n"
             "Returns the estimated network hashes per second based on the last 120 blocks.\n"
             "Pass in [blocks] to override # of blocks, -1 specifies since last difficulty change.");
+            
+    if (pindexBest->nHeight >= CUTOFF_POW_BLOCK)
+        return 0;            
 
     return GetNetworkHashPS(params.size() > 0 ? params[0].get_int() : 120);
 }
@@ -131,6 +134,9 @@ Value getworkex(const Array& params, bool fHelp)
 
     if (IsInitialBlockDownload())
         throw JSONRPCError(-10, "CoffeeCoin2.0 is downloading blocks...");
+        
+    if (pindexBest->nHeight >= CUTOFF_POW_BLOCK)
+        throw JSONRPCError(RPC_MISC_ERROR, "PoW blocks are no longer accepted...");
 
     typedef map<uint256, pair<CBlock*, CScript> > mapNewBlock_t;
     static mapNewBlock_t mapNewBlock;
@@ -265,6 +271,9 @@ Value getwork(const Array& params, bool fHelp)
 
     if (IsInitialBlockDownload())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "CoffeeCoin2.0 is downloading blocks...");
+
+    if (pindexBest->nHeight >= CUTOFF_POW_BLOCK)
+        throw JSONRPCError(RPC_MISC_ERROR, "PoW blocks are no longer accepted...");
 
     typedef map<uint256, pair<CBlock*, CScript> > mapNewBlock_t;
     static mapNewBlock_t mapNewBlock;    // FIXME: thread safety
@@ -409,6 +418,9 @@ Value getblocktemplate(const Array& params, bool fHelp)
 
     if (IsInitialBlockDownload())
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "CoffeeCoin2.0 is downloading blocks...");
+
+    if (pindexBest->nHeight >= CUTOFF_POW_BLOCK)
+        throw JSONRPCError(RPC_MISC_ERROR, "PoW blocks are no longer accepted...");
 
     static CReserveKey reservekey(pwalletMain);
 
