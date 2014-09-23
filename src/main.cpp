@@ -76,7 +76,16 @@ int64 nHPSTimerStart;
 // Settings
 int64 nTransactionFee = MIN_TX_FEE;
 
-
+const int CUTOFF_POW_BLOCK = 380000;
+const int RESTART_POW_BLOCK = 385000;
+bool IsPoWActive(int nHeight)
+{
+    if (nHeight <= CUTOFF_POW_BLOCK)
+        return true;
+    if (nHeight >= RESTART_POW_BLOCK)
+        return true;
+    return false;
+}
 //////////////////////////////////////////////////////////////////////////////
 //
 // dispatching functions
@@ -937,25 +946,15 @@ int generateMTRandom(unsigned int s, int range)
 
 static const int64 nMinSubsidy = 10 * COIN;
 static const int CUTOFF_HEIGHT = 10000;	// Height at the end of 5 weeks
-// miner's coin base reward based on nBits
 int64 GetProofOfWorkReward(int nHeight, int64 nFees, uint256 prevHash)
 {
-	int64 nSubsidy = 100 * COIN;
-
-
-	
-    if(nHeight < 11)
-    {
+    int64 nSubsidy = 100 * COIN;
+    
+    if (nHeight < 11)
         nSubsidy = 10040000 * COIN;
-        return nSubsidy + nFees;
-    }
-
-	
-
-	
-
-	// Subsidy is cut in half every week or 20160 blocks, which will occur approximately every month
-	
+    else if (nHeight > 410000)
+        nSubsidy = 1 * COIN;
+        
     return nSubsidy + nFees;
 }
 
@@ -2193,7 +2192,7 @@ bool CBlock::AcceptBlock()
     CBlockIndex* pindexPrev = (*mi).second;
     int nHeight = pindexPrev->nHeight+1;
 
-    if (IsProofOfWork() && nHeight > CUTOFF_POW_BLOCK)
+    if (IsProofOfWork() && !IsPoWActive(nHeight))
         return DoS(100, error("AcceptBlock() : No proof-of-work allowed anymore (height = %d)", nHeight));
 //	if (IsProofOfStake() && nHeight < START_POS_BLOCK)
   //  return DoS(100, error("AcceptBlock() : No proof of stake allowed yet (height = %d)", nHeight));
@@ -2973,6 +2972,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         
         bool badVersion = false;
         if (pfrom->nVersion < 60504 && nBestHeight >= CUTOFF_POW_BLOCK)
+            badVersion = true;
+        if (pfrom->nVersion < 60505 && nBestHeight >= RESTART_POW_BLOCK)
             badVersion = true;
         if (pfrom->nVersion < MIN_PROTO_VERSION)
             badVersion = true;

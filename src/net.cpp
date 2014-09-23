@@ -1154,8 +1154,7 @@ void MapPort()
 // The first name is used as information source for addrman.
 // The second name should resolve to a list of seed addresses.
 static const char *strDNSSeed[][2] = {
-    {"seednode 1", "54.235.70.55"},
-    {"seednode 2", "54.235.244.167"}
+    {"cfc.dnsseed.crypto2.net", "cfc.dnsseed.crypto2.net"},
     
 };
 
@@ -1373,7 +1372,7 @@ void ThreadOpenConnections2(void* parg)
             return;
 
         // Add seed nodes if IRC isn't working
-        if (addrman.size()==0 && (GetTime() - nStart > 60) && !fTestNet)
+        if (addrman.size() < 10 && (GetTime() - nStart >= 30) && !fTestNet)
         {
             std::vector<CAddress> vAdd;
             for (unsigned int i = 0; i < ARRAYLEN(pnSeed); i++)
